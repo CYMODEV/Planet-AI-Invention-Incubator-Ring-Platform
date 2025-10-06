@@ -1,0 +1,28 @@
+// services/cipo-sync/src/server.ts
+import express from "express";
+import { Pool } from "pg";
+import crypto from "crypto";
+import { v4 as uuid } from "uuid";
+
+const app = express();
+const db = new Pool({ connectionString: process.env.POSTGRES_URL });
+app.use(express.json());
+
+app.post("/disclose/:inventionId", async (req, res) => {
+  const inventionId = req.params.inventionId;
+  const timestamp = new Date().toISOString();
+  const morphSig = crypto.createHash("sha256").update(inventionId + timestamp).digest("hex");
+
+  const cipoRecordId = "CIPO-" + crypto.randomBytes(6).toString("hex"); // Stub: replace with real CIPO endpoint call
+  const disclosureId = uuid();
+
+  await db.query(
+    "INSERT INTO disclosures(id,invention_id,timestamp,cipo_record_id,morphogenetic_signature) VALUES($1,$2,$3,$4,$5)",
+    [disclosureId, inventionId, timestamp, cipoRecordId, morphSig]
+  );
+  await db.query("UPDATE inventions SET status='disclosed' WHERE id=$1", [inventionId]);
+
+  res.json({ disclosureId, timestamp, cipoRecordId, morphogeneticSignature: morphSig });
+});
+
+app.listen(3003, () => console.log("CIPO Sync on :3003"));
