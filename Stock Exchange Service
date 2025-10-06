@@ -1,0 +1,33 @@
+// services/stock-exchange/src/server.ts
+import express from "express";
+import { Pool } from "pg";
+import { v4 as uuid } from "uuid";
+
+const db = new Pool({ connectionString: process.env.POSTGRES_URL });
+const app = express();
+app.use(express.json());
+
+app.post("/listings", async (req, res) => {
+  const id = uuid();
+  const { inventionId, symbol, initialPrice } = req.body;
+  await db.query(
+    "INSERT INTO listings(id,invention_id,symbol,price) VALUES($1,$2,$3,$4)",
+    [id, inventionId, symbol, initialPrice]
+  );
+  res.json({ id, symbol, price: initialPrice });
+});
+
+app.post("/trade", async (req, res) => {
+  const id = uuid();
+  const { listingId, userId, side, quantity } = req.body; // buy/sell
+  const { rows } = await db.query("SELECT price FROM listings WHERE id=$1", [listingId]);
+  const price = Number(rows[0].price);
+  const amount = price * quantity;
+  await db.query(
+    "INSERT INTO trades(id,listing_id,user_id,side,quantity,amount) VALUES($1,$2,$3,$4,$5,$6)",
+    [id, listingId, userId, side, quantity, amount]
+  );
+  res.json({ id, amount });
+});
+
+app.listen(3009, () => console.log("Exchange on :3009"));
