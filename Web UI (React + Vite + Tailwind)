@@ -1,0 +1,219 @@
+// apps/web-ui/src/main.tsx
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
+import App from "./App";
+import "./index.css";
+
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <BrowserRouter>
+    <App />
+  </BrowserRouter>
+);
+// apps/web-ui/src/App.tsx
+import { Routes, Route, Link } from "react-router-dom";
+import Dashboard from "./pages/Dashboard";
+import Invention from "./pages/Invention";
+import Governance from "./pages/Governance";
+import Treasury from "./pages/Treasury";
+
+export default function App() {
+  return (
+    <div className="min-h-screen bg-slate-900 text-slate-100">
+      <aside className="w-64 fixed h-full bg-slate-950 border-r border-slate-800 p-4">
+        <h1 className="text-xl font-bold mb-6">Cymos Planet</h1>
+        <nav className="flex flex-col gap-2">
+          <Link to="/">Dashboard</Link>
+          <Link to="/invention">My Inventions</Link>
+          <Link to="/governance">Governance</Link>
+          <Link to="/treasury">Treasury</Link>
+        </nav>
+      </aside>
+      <main className="ml-64 p-8">
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/invention" element={<Invention />} />
+          <Route path="/governance" element={<Governance />} />
+          <Route path="/treasury" element={<Treasury />} />
+        </Routes>
+      </main>
+    </div>
+  );
+}
+// apps/web-ui/src/pages/Dashboard.tsx
+import { useEffect, useState } from "react";
+
+export default function Dashboard() {
+  const [balance, setBalance] = useState(0);
+  useEffect(() => {
+    fetch("http://localhost:8080/treasury/balance")
+      .then(r => r.json())
+      .then(d => setBalance(d.balance));
+  }, []);
+  return (
+    <div className="grid grid-cols-3 gap-6">
+      <section className="bg-slate-800 rounded p-4">
+        <h2 className="font-semibold mb-2">CIPO Sync Engine</h2>
+        <p className="text-sm">Disclosure timestamped, morphogenetic signature bound.</p>
+      </section>
+      <section className="bg-slate-800 rounded p-4">
+        <h2 className="font-semibold mb-2">Token Portfolio</h2>
+        <ul className="text-sm">
+          <li>Utility: 2</li>
+          <li>Identity: 1</li>
+          <li>Heritage: 1</li>
+        </ul>
+      </section>
+      <section className="bg-slate-800 rounded p-4">
+        <h2 className="font-semibold mb-2">Treasury Balance</h2>
+        <p className="text-lg">${balance.toFixed(2)}</p>
+      </section>
+    </div>
+  );
+}
+// apps/web-ui/src/pages/Invention.tsx
+import { useState } from "react";
+
+export default function Invention() {
+  const [title, setTitle] = useState("");
+  const [abstract, setAbstract] = useState("");
+  const [inventionId, setInventionId] = useState<string | null>(null);
+
+  async function create() {
+    const res = await fetch("http://localhost:8080/ideation/inventions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, abstract, ownerId: "00000000-0000-0000-0000-000000000001" })
+    });
+    const data = await res.json();
+    setInventionId(data.id);
+  }
+
+  async function disclose() {
+    if (!inventionId) return;
+    await fetch(`http://localhost:8080/cipo/disclose/${inventionId}`, { method: "POST" });
+  }
+
+  async function mint() {
+    if (!inventionId) return;
+    await fetch(`http://localhost:8080/tokens/mint/${inventionId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ utility: 2, identity: 1, heritage: 1 })
+    });
+  }
+
+  return (
+    <div className="space-y-4">
+      <h2 className="font-semibold">AI-Assisted Ideation Engine</h2>
+      <input className="w-full p-2 rounded bg-slate-800" placeholder="Title" value={title} onChange={e => setTitle(e.target.value)} />
+      <textarea className="w-full p-2 rounded bg-slate-800" placeholder="Abstract" value={abstract} onChange={e => setAbstract(e.target.value)} />
+      <div className="flex gap-3">
+        <button onClick={create} className="px-3 py-2 bg-emerald-600 rounded">Create</button>
+        <button onClick={disclose} className="px-3 py-2 bg-indigo-600 rounded">CIPO Disclose</button>
+        <button onClick={mint} className="px-3 py-2 bg-yellow-600 rounded">Mint Tokens</button>
+      </div>
+      {inventionId && <p className="text-xs text-slate-400">Invention ID: {inventionId}</p>}
+    </div>
+  );
+}
+// apps/web-ui/src/pages/Governance.tsx
+import { useState } from "react";
+
+export default function Governance() {
+  const [title, setTitle] = useState("");
+  const [desc, setDesc] = useState("");
+  const [proposalId, setProposalId] = useState<string | null>(null);
+  const [tally, setTally] = useState<number | null>(null);
+  const [state, setState] = useState<string>("voting");
+
+  async function create() {
+    const res = await fetch("http://localhost:8080/governance/proposals", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, description: desc, createdBy: "00000000-0000-0000-0000-000000000001" })
+    });
+    const data = await res.json();
+    setProposalId(data.id);
+  }
+
+  async function vote(support: boolean) {
+    if (!proposalId) return;
+    const res = await fetch(`http://localhost:8080/governance/proposals/${proposalId}/vote`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ voterId: "00000000-0000-0000-0000-000000000001", support })
+    });
+    const data = await res.json();
+    setTally(data.tally);
+    setState(data.state);
+  }
+
+  return (
+    <div className="space-y-4">
+      <h2 className="font-semibold">Governance Proposals</h2>
+      <input className="w-full p-2 rounded bg-slate-800" placeholder="Title" value={title} onChange={e => setTitle(e.target.value)} />
+      <textarea className="w-full p-2 rounded bg-slate-800" placeholder="Description" value={desc} onChange={e => setDesc(e.target.value)} />
+      <div className="flex gap-3">
+        <button onClick={create} className="px-3 py-2 bg-purple-600 rounded">Create</button>
+        <button onClick={() => vote(true)} className="px-3 py-2 bg-emerald-600 rounded">Vote Yes</button>
+        <button onClick={() => vote(false)} className="px-3 py-2 bg-rose-600 rounded">Vote No</button>
+      </div>
+      {proposalId && <p className="text-xs text-slate-400">Proposal ID: {proposalId} | Tally: {tally} | State: {state}</p>}
+    </div>
+  );
+}
+// apps/web-ui/src/pages/Treasury.tsx
+import { useEffect, useState } from "react";
+
+export default function Treasury() {
+  const [balance, setBalance] = useState(0);
+  const [amount, setAmount] = useState(1000);
+  useEffect(() => {
+    fetch("http://localhost:8080/treasury/balance").then(r => r.json()).then(d => setBalance(d.balance));
+  }, []);
+  async function simulate() {
+    await fetch("http://localhost:8080/treasury/transfer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ source: "licensing", inventionId: "00000000-0000-0000-0000-000000000001", amount })
+    });
+    const d = await (await fetch("http://localhost:8080/treasury/balance")).json();
+    setBalance(d.balance);
+  }
+  return (
+    <div className="space-y-4">
+      <h2 className="font-semibold">Innovation Treasury</h2>
+      <p>Balance: ${balance.toFixed(2)}</p>
+      <input type="number" className="p-2 rounded bg-slate-800" value={amount} onChange={e => setAmount(Number(e.target.value))} />
+      <button onClick={simulate} className="px-3 py-2 bg-yellow-600 rounded">Simulate Revenue</button>
+    </div>
+  );
+}
+/* apps/web-ui/src/index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: dark; }
+// apps/web-ui/package.json
+{
+  "name": "web-ui",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "react": "^18",
+    "react-dom": "^18",
+    "react-router-dom": "^6"
+  },
+  "devDependencies": {
+    "vite": "^5",
+    "tailwindcss": "^3",
+    "autoprefixer": "^10",
+    "postcss": "^8",
+    "typescript": "^5"
+  }
+}
