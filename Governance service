@@ -1,0 +1,31 @@
+// services/governance/src/server.ts
+import express from "express";
+import { Pool } from "pg";
+import { v4 as uuid } from "uuid";
+
+const db = new Pool({ connectionString: process.env.POSTGRES_URL });
+const app = express();
+app.use(express.json());
+
+app.post("/proposals", async (req, res) => {
+  const id = uuid();
+  const { title, description, createdBy } = req.body;
+  await db.query(
+    "INSERT INTO proposals(id,title,description,state,created_by) VALUES($1,$2,$3,'voting',$4)",
+    [id, title, description, createdBy]
+  );
+  res.json({ id });
+});
+
+app.post("/proposals/:id/vote", async (req, res) => {
+  const { id } = req.params;
+  const { voterId, support } = req.body;
+  await db.query("INSERT INTO votes(proposal_id,voter_id,support) VALUES($1,$2,$3)", [id, voterId, support]);
+  const { rows } = await db.query("SELECT SUM(CASE WHEN support THEN 1 ELSE -1 END) AS tally FROM votes WHERE proposal_id=$1", [id]);
+  const tally = Number(rows[0].tally || 0);
+  const state = tally >= 0 ? "passed" : "rejected";
+  await db.query("UPDATE proposals SET state=$1 WHERE id=$2", [state, id]);
+  res.json({ id, tally, state });
+});
+
+app.listen(3006, () => console.log("Governance on :3006"));
