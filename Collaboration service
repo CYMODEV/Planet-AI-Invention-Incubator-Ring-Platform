@@ -1,0 +1,27 @@
+// services/collaboration/src/server.ts
+import express from "express";
+import { Pool } from "pg";
+import { v4 as uuid } from "uuid";
+
+const db = new Pool({ connectionString: process.env.POSTGRES_URL });
+const app = express();
+app.use(express.json());
+
+app.post("/partners", async (req, res) => {
+  const id = uuid();
+  const { name, type } = req.body; // academic, trade, cultural, legal
+  await db.query("INSERT INTO partners(id,name,type) VALUES($1,$2,$3)", [id, name, type]);
+  res.json({ id });
+});
+
+app.post("/engage", async (req, res) => {
+  const id = uuid();
+  const { inventionId, partnerId, purpose } = req.body;
+  await db.query(
+    "INSERT INTO engagements(id,invention_id,partner_id,purpose) VALUES($1,$2,$3,$4)",
+    [id, inventionId, partnerId, purpose]
+  );
+  res.json({ id });
+});
+
+app.listen(3008, () => console.log("Collaboration on :3008"));
