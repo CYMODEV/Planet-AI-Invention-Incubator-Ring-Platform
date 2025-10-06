@@ -1,0 +1,34 @@
+// services/ideation/src/server.ts
+import express from "express";
+import { Pool } from "pg";
+import { v4 as uuid } from "uuid";
+
+const db = new Pool({ connectionString: process.env.POSTGRES_URL });
+const app = express();
+app.use(express.json());
+
+app.post("/inventions", async (req, res) => {
+  const id = uuid();
+  const { title, abstract, ownerId } = req.body;
+  await db.query(
+    "INSERT INTO inventions(id, title, abstract, status, owner_id) VALUES($1,$2,$3,'draft',$4)",
+    [id, title, abstract, ownerId]
+  );
+  res.json({ id });
+});
+
+app.post("/inventions/:id/refine", async (req, res) => {
+  // Stub AI refinement: app integrates with an internal model or external service
+  const { id } = req.params;
+  const { abstract } = req.body;
+  const refined = `${abstract}\n\nRefined for novelty, feasibility, and market fit.`;
+  await db.query("UPDATE inventions SET abstract=$1, status='submitted' WHERE id=$2", [refined, id]);
+  res.json({ id, abstract: refined });
+});
+
+app.get("/inventions/:id", async (req, res) => {
+  const { rows } = await db.query("SELECT * FROM inventions WHERE id=$1", [req.params.id]);
+  res.json(rows[0] || {});
+});
+
+app.listen(3002, () => console.log("Ideation on :3002"));
