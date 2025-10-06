@@ -1,0 +1,96 @@
+-- infra/migrations/001_init.sql
+CREATE TABLE IF NOT EXISTS users (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  email text UNIQUE NOT NULL,
+  password_hash text NOT NULL,
+  display_name text NOT NULL,
+  roles text[] DEFAULT ARRAY['citizen']
+);
+
+CREATE TABLE IF NOT EXISTS inventions (
+  id uuid PRIMARY KEY,
+  title text NOT NULL,
+  abstract text NOT NULL,
+  status text NOT NULL,
+  owner_id uuid REFERENCES users(id),
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS disclosures (
+  id uuid PRIMARY KEY,
+  invention_id uuid REFERENCES inventions(id),
+  timestamp timestamptz NOT NULL,
+  cipo_record_id text NOT NULL,
+  morphogenetic_signature text NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS token_mints (
+  id uuid PRIMARY KEY,
+  invention_id uuid REFERENCES inventions(id),
+  classes jsonb NOT NULL,
+  tx_id text NOT NULL,
+  minted_at timestamptz NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS proposals (
+  id uuid PRIMARY KEY,
+  title text NOT NULL,
+  description text NOT NULL,
+  state text NOT NULL,
+  created_by uuid REFERENCES users(id),
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS votes (
+  proposal_id uuid REFERENCES proposals(id),
+  voter_id uuid REFERENCES users(id),
+  support boolean NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS treasury (
+  id int PRIMARY KEY DEFAULT 1,
+  balance numeric DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS treasury_transfers (
+  id uuid PRIMARY KEY,
+  source text NOT NULL,
+  invention_id uuid REFERENCES inventions(id),
+  amount numeric NOT NULL,
+  tx_id text NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS partners (
+  id uuid PRIMARY KEY,
+  name text NOT NULL,
+  type text NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS engagements (
+  id uuid PRIMARY KEY,
+  invention_id uuid REFERENCES inventions(id),
+  partner_id uuid REFERENCES partners(id),
+  purpose text NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS listings (
+  id uuid PRIMARY KEY,
+  invention_id uuid REFERENCES inventions(id),
+  symbol text NOT NULL UNIQUE,
+  price numeric NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS trades (
+  id uuid PRIMARY KEY,
+  listing_id uuid REFERENCES listings(id),
+  user_id uuid REFERENCES users(id),
+  side text NOT NULL,
+  quantity numeric NOT NULL,
+  amount numeric NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
+
+INSERT INTO treasury(id, balance) VALUES (1, 0) ON CONFLICT (id) DO NOTHING;
