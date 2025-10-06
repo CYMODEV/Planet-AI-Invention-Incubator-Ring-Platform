@@ -1,0 +1,7 @@
+# Prereqs: Node 20+, pnpm, Docker
+pnpm install
+docker compose up -d
+pnpm -r build
+pnpm -r dev
+# Web UI at http://localhost:5173
+# API Gateway at http://localhost:8080
