@@ -1,0 +1,29 @@
+# Cymos Planet Platform
+
+An AI-powered invention incubator ring with a self-sustaining economic engine.
+
+## Services
+- Auth: user registration/login
+- Ideation: invention creation and refinement
+- CIPO Sync: timestamped disclosure and registry integration
+- Trust Oracle: identity and authenticity scoring
+- Tokens: multi-class token minting
+- Governance: proposals and voting
+- Treasury: revenue and reinvestment
+- Collaboration: partners and engagements
+- Stock Exchange: listings and trades
+- API Gateway: unified entrypoint
+
+## Run locally
+1. pnpm install
+2. docker compose up -d
+3. pnpm -r build
+4. pnpm -r dev
+
+## Environment
+Set POSTGRES_URL, REDIS_URL, NATS_URL, JWT_SECRET, CIPOSYNC_* in `.env`.
+
+## Notes
+- Replace stubbed CIPO endpoint logic with your Cymos Intellectual Property Office integration.
+- Add role-based access control for production.
+- Secure services behind API gateway with JWT.
