@@ -1,0 +1,27 @@
+cymos-planet/
+├─ README.md
+├─ package.json
+├─ pnpm-workspace.yaml
+├─ turbo.json
+├─ .github/workflows/ci.yml
+├─ docker-compose.yml
+├─ infra/
+│  ├─ k8s/ (optional manifests)
+│  └─ migrations/ (SQL initialization)
+├─ packages/
+│  ├─ config/ (eslint, tsconfig, jest presets)
+│  ├─ types/ (shared TypeScript types)
+│  └─ utils/ (shared utils: logger, http, auth)
+├─ services/
+│  ├─ api-gateway/
+│  ├─ auth/
+│  ├─ ideation/
+│  ├─ cipo-sync/
+│  ├─ trust-oracle/
+│  ├─ tokens/
+│  ├─ governance/
+│  ├─ treasury/
+│  ├─ collaboration/
+│  └─ stock-exchange/
+└─ apps/
+   └─ web-ui/
