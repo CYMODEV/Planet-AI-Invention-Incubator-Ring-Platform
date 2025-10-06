@@ -1,0 +1,8 @@
+# Common
+NODE_ENV=development
+POSTGRES_URL=postgres://postgres:postgres@localhost:5432/cymos
+REDIS_URL=redis://localhost:6379
+NATS_URL=nats://localhost:4222
+JWT_SECRET=supersecret
+CIPOSYNC_API_KEY=replace-me
+CIPOSYNC_ENDPOINT=https://cipo.cymos.planet/api
