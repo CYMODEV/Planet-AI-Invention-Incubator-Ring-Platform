@@ -1,0 +1,29 @@
+// services/treasury/src/server.ts
+import express from "express";
+import { Pool } from "pg";
+import { v4 as uuid } from "uuid";
+
+const db = new Pool({ connectionString: process.env.POSTGRES_URL });
+const app = express();
+app.use(express.json());
+
+app.post("/transfer", async (req, res) => {
+  const id = uuid();
+  const { source, inventionId, amount } = req.body;
+  const txId = "TR-" + uuid();
+  await db.query(
+    "INSERT INTO treasury_transfers(id,source,invention_id,amount,tx_id) VALUES($1,$2,$3,$4,$5)",
+    [id, source, inventionId, amount, txId]
+  );
+  // Auto allocate 20% reinvestment
+  const reinvest = amount * 0.2;
+  await db.query("UPDATE treasury SET balance = COALESCE(balance,0) + $1", [reinvest]);
+  res.json({ id, source, inventionId, amount, reinvest, txId });
+});
+
+app.get("/balance", async (_req, res) => {
+  const { rows } = await db.query("SELECT balance FROM treasury LIMIT 1");
+  res.json({ balance: Number(rows[0]?.balance || 0) });
+});
+
+app.listen(3007, () => console.log("Treasury on :3007"));
