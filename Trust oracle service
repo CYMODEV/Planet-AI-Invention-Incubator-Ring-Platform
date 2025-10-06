@@ -1,0 +1,20 @@
+// services/trust-oracle/src/server.ts
+import express from "express";
+import { Pool } from "pg";
+import crypto from "crypto";
+
+const db = new Pool({ connectionString: process.env.POSTGRES_URL });
+const app = express();
+app.use(express.json());
+
+app.post("/verify", async (req, res) => {
+  const { userId, biometricHash, voiceSignature } = req.body;
+  const score =
+    (biometricHash ? 0.6 : 0) +
+    (voiceSignature ? 0.3 : 0) +
+    (crypto.randomInt(0, 10) / 100); // stochastic salt
+  await db.query("INSERT INTO trust_events(user_id, score) VALUES($1,$2)", [userId, score]);
+  res.json({ userId, trustScore: Math.min(1, score) });
+});
+
+app.listen(3004, () => console.log("Trust Oracle on :3004"));
