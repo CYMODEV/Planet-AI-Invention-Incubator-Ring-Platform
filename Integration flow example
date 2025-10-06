@@ -1,0 +1,23 @@
+// apps/web-ui/src/lib/workflow.ts
+export async function fullWorkflow({ title, abstract }: { title: string; abstract: string }) {
+  const ownerId = "00000000-0000-0000-0000-000000000001";
+  const invRes = await fetch("http://localhost:8080/ideation/inventions", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title, abstract, ownerId })
+  });
+  const { id } = await invRes.json();
+  await fetch(`http://localhost:8080/ideation/inventions/${id}/refine`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ abstract })
+  });
+  await fetch(`http://localhost:8080/cipo/disclose/${id}`, { method: "POST" });
+  await fetch(`http://localhost:8080/tokens/mint/${id}`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ utility: 2, identity: 1, heritage: 1 })
+  });
+  await fetch("http://localhost:8080/treasury/transfer", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ source: "licensing", inventionId: id, amount: 5000 })
+  });
+  return id;
+}
