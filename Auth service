@@ -1,0 +1,31 @@
+// services/auth/src/server.ts
+import express from "express";
+import bcrypt from "bcryptjs";
+import { signToken } from "../../packages/utils/src/auth.js";
+import { Pool } from "pg";
+
+const db = new Pool({ connectionString: process.env.POSTGRES_URL });
+const app = express();
+app.use(express.json());
+
+app.post("/register", async (req, res) => {
+  const { email, password, displayName } = req.body;
+  const hash = await bcrypt.hash(password, 10);
+  const { rows } = await db.query(
+    "INSERT INTO users(email, password_hash, display_name) VALUES($1,$2,$3) RETURNING id",
+    [email, hash, displayName]
+  );
+  res.json({ id: rows[0].id });
+});
+
+app.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+  const { rows } = await db.query("SELECT id, password_hash, display_name FROM users WHERE email=$1", [email]);
+  if (!rows[0]) return res.status(401).json({ error: "invalid" });
+  const ok = await bcrypt.compare(password, rows[0].password_hash);
+  if (!ok) return res.status(401).json({ error: "invalid" });
+  const token = signToken({ uid: rows[0].id, email });
+  res.json({ token, user: { id: rows[0].id, email, displayName: rows[0].display_name } });
+});
+
+app.listen(3001, () => console.log("Auth on :3001"));
